@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">MyChatApp</string>
+    <string name="display_name">Display Name</string>
+    <string name="password">Password</string>
+    <string name="email">Email</string>
+    <string name="welcome_to_chatapp">Welcome To MyChatApp</string>
+    <string name="Create_A_Account">Create A Account</string>
+    <string name="this_is_main_activity">This is Main Activity</string>
+    <string name="add_in_database">Add In Database</string>
+    <string name="log_out">Log Out</string>
+    <string name="log_in">log in</string>
+    <string name="already_have_a_account">Already have A Account</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="change_image">Change Image</string>
+    <string name="change_status">Change Status</string>
+    <string name="hey_there_i_am_using_chatapp">Hey there, I am using MyChatApp</string>
+    <string name="all_users">All Users</string>
+    <string name="account_setting">Account Setting</string>
+    <string name="total_friends">Total Friends:</string>
+    <string name="send_friend_request">Send Friend Request</string>
+    <string name="ChatApp">MyChatApp</string>
+    <string name="creator">By Ripunjay</string>
+    <string name="connection">CONNECTION IS EVERYTHING</string>
+
+</resources>
