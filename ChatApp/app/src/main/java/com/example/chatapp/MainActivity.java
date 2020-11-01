@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity{
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
         if(currentUser != null) {
-            mUserDataRef.child("online").setValue(ServerValue.TIMESTAMP);
+          //  mUserDataRef.child("online").setValue(ServerValue.TIMESTAMP);
 
         }
     }
@@ -98,19 +98,14 @@ public class MainActivity extends AppCompatActivity{
     getMenuInflater().inflate(R.menu.main_menu,menu);
 
     return true;
-
-
-
   }
 
   @Override
   public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
-
     if(item.getItemId() == R.id.main_logout_btn){
         mUserDataRef.child("online").setValue(ServerValue.TIMESTAMP);
            FirebaseAuth.getInstance().signOut();
-
            sendToStart();
     }
     if(item.getItemId() == R.id.main_account_setting)

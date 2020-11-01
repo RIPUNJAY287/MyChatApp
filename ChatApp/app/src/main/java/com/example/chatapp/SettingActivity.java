@@ -117,16 +117,6 @@ public class SettingActivity extends AppCompatActivity {
 
 
 
-
-
-
-
-
-
-
-
-
-
             }
         });
         status_btn.setOnClickListener(new View.OnClickListener() {
@@ -188,13 +178,37 @@ public class SettingActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+       FirebaseUser currentUser  = FirebaseAuth.getInstance().getCurrentUser();
+       if(currentUser != null) {
+           String current_uid = currentUser.getUid();
+           DatabaseReference baseRef = FirebaseDatabase.getInstance().getReference().child("Users").child(current_uid);
+           baseRef.addValueEventListener(new ValueEventListener() {
+               @Override
+               public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                   Users usr = dataSnapshot.getValue(Users.class);
+                   String profile_url = usr.getImage();
+                   Picasso.get().load(profile_url).placeholder(R.drawable.avatar).into(imgprofile);
+               }
+
+               @Override
+               public void onCancelled(@NonNull DatabaseError databaseError) {
+
+               }
+           });
+       }
+    }
+
+    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
 
         if(requestCode == Gallery_code && resultCode == RESULT_OK)
         {
             Uri imageUri = data.getData();
+            final File file  =  new File(imageUri.getPath());
+
             CropImage.activity(imageUri)
                     .setAspectRatio(1,1)
                     .start(this);
@@ -215,10 +229,11 @@ public class SettingActivity extends AppCompatActivity {
                 progressdia.show();
                 Uri resultUri = result.getUri();
                 final File thumb_file  =  new File(resultUri.getPath());
+                Log.d("path of image is here: " , thumb_file.toString());
+
+
                 //Toast.makeText(SettingActivity.this,resultUri.toString(),Toast.LENGTH_SHORT).show();
                 final String current_user_id = currentUser.getUid();
-
-
 
 
 
@@ -236,16 +251,14 @@ public class SettingActivity extends AppCompatActivity {
                                 public void onSuccess(Uri uri) {
                                     final String download_url = uri.toString();
 
-
-                                    //final String[] download_thumb_url = new String[1];
                                     try {
                                         Bitmap compressedbitmap = new Compressor(SettingActivity.this)
-                                                .setMaxHeight(200)
-                                                .setMaxWidth(200)
+                                                .setMaxHeight(100)
+                                                .setMaxWidth(100)
                                                 .setQuality(50)
                                                 .compressToBitmap(thumb_file);
                                         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                                        compressedbitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                                        compressedbitmap.compress(Bitmap.CompressFormat.PNG, 80, stream);
                                         byte[] thumb_byte = stream.toByteArray();
                                         final StorageReference thumb_filepath = profileImageRef.child("profile_images").child("thumbs").child(current_user_id + ".jpg");
                                         //final UploadTask uploadTask = thumb_filepath.putBytes(thumb_byte);
@@ -259,15 +272,10 @@ public class SettingActivity extends AppCompatActivity {
                                                         public void onSuccess(Uri uri) {
 
                                                             String thumb_url =  uri.toString();
-                                                           // Toast.makeText(SettingActivity.this,"Profile Pic Uploaded",Toast.LENGTH_LONG).show();
-
 
                                                             Map downloaded_url = new HashMap<>();
-                                                            downloaded_url.put("image",thumb_url);
+                                                            downloaded_url.put("image",download_url);
                                                             downloaded_url.put("thumb_image",thumb_url);
-
-
-
 
                                                             databaseRefer.updateChildren(downloaded_url).addOnCompleteListener(new OnCompleteListener<Void>() {
                                                                 @Override
