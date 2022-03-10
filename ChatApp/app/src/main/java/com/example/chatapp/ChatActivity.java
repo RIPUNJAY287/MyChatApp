@@ -5,9 +5,9 @@ import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -18,6 +18,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -47,14 +48,24 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
 import de.hdodenhof.circleimageview.CircleImageView;
-import id.zelory.compressor.Compressor;
+
 
 public class ChatActivity extends AppCompatActivity {
+    static{
+        System.loadLibrary("keys");
+    }
+    private native  String getSecretKey();
+    private native  String getSecretIV();
+
     private String mChatUser;
     private Toolbar mChatToolbar;
     private DatabaseReference nRootRef;
@@ -82,7 +93,8 @@ public class ChatActivity extends AppCompatActivity {
     private static final int GALLERY_PICK = 44;
 
     ProgressDialog progressdia;
-
+    AES aes;
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -108,6 +120,14 @@ public class ChatActivity extends AppCompatActivity {
         nMessagesList.setHasFixedSize(true);
         nMessagesList.setLayoutManager(linearLayoutManager);
         nMessagesList.setAdapter(messageAdapter);
+
+        try {
+            aes = new AES();
+        }
+        catch(Exception ignored) {
+            ignored.printStackTrace();
+        }
+
         loadMessages();
 
 
@@ -186,6 +206,7 @@ public class ChatActivity extends AppCompatActivity {
 
         nChatSendbtn.setOnClickListener(new View.OnClickListener() {
 
+            @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onClick(View v) {
                 sendMessage();
@@ -297,11 +318,17 @@ public class ChatActivity extends AppCompatActivity {
 
 
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     private void loadMoreMessages() {
         DatabaseReference messageRef =  nRootRef.child("messages").child(mCurrentUserId).child(mChatUser);
         Query messageQuery  = messageRef.orderByKey().endAt(nLastKey).limitToLast(10);
 
+
+        byte[] decodedKey = Base64.getDecoder().decode(getSecretKey());
+        final SecretKey originalKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+
         messageQuery.addChildEventListener(new ChildEventListener() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
                 Messages messages = dataSnapshot.getValue(Messages.class);
@@ -312,7 +339,19 @@ public class ChatActivity extends AppCompatActivity {
                     nLastKey = messageKey;
 
                 }
+                String msgtype = messages.getType();
 
+                String txt= "text";
+                if (msgtype.equals(txt)){
+                    try {
+                        String msgiv = messages.getIV();
+                        final byte[] originalIV = Base64.getDecoder().decode(msgiv);
+
+                        messages.setMessage(aes.decrypt(messages.getMessage(),originalKey,originalIV));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
                 if(!messageKey.equals(nPrewKey)){
                     messagesList.add(itemPos++,messages);
 
@@ -352,26 +391,47 @@ public class ChatActivity extends AppCompatActivity {
 
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     private void loadMessages() {
         DatabaseReference messageRef =  nRootRef.child("messages").child(mCurrentUserId).child(mChatUser);
         Query messageQuery  = messageRef.limitToLast(currentPage * Total_Item_To_Load);
 
+        byte[] decodedKey = Base64.getDecoder().decode(getSecretKey());
+        final SecretKey originalKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+
+
         messageQuery.addChildEventListener(new ChildEventListener() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
                 Messages messages = dataSnapshot.getValue(Messages.class);
-                String messageKey =  dataSnapshot.getKey();
+                String messageKey = dataSnapshot.getKey();
 
                 itemPos++;
-                if(itemPos ==1){
+                if (itemPos == 1) {
                     nLastKey = messageKey;
                     nPrewKey = messageKey;
                 }
 
-                messagesList.add(messages);
-                messageAdapter.notifyDataSetChanged();
-                nMessagesList.scrollToPosition(messagesList.size() - 1);
-                nSwipeLayout.setRefreshing(false);
+                String msgtype = messages.getType();
+
+                String txt= "text";
+                if (msgtype.equals(txt)){
+                    try {
+                        String msgiv = messages.getIV();
+                        final byte[] originalIV = Base64.getDecoder().decode(msgiv);
+
+                        messages.setMessage(aes.decrypt(messages.getMessage(),originalKey,originalIV));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                    messagesList.add(messages);
+
+                    messageAdapter.notifyDataSetChanged();
+                    nMessagesList.scrollToPosition(messagesList.size() - 1);
+                    nSwipeLayout.setRefreshing(false);
+
             }
 
             @Override
@@ -396,8 +456,23 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    private void sendMessage() {
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private void sendMessage(){
         String message = nChatMessageView.getText().toString();
+        String iv="";
+        try{
+            byte[] decodedKey = Base64.getDecoder().decode(getSecretKey());
+            SecretKey originalKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+            String[]  enMessage = new String[2];
+            enMessage = aes.encrypt(message,originalKey);
+            message = enMessage[0];
+            iv = enMessage[1];
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+
         if(!TextUtils.isEmpty(message)){
             Map messageMap = new HashMap();
             String current_user_ref = "messages/"+ mCurrentUserId + "/"+mChatUser;
@@ -413,6 +488,7 @@ public class ChatActivity extends AppCompatActivity {
             messageMap.put("type","text");
             messageMap.put("time",ServerValue.TIMESTAMP);
             messageMap.put("from",mCurrentUserId);
+            messageMap.put("IV",iv);
 
 
             Map messageUserMap = new HashMap();

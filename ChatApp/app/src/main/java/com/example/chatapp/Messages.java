@@ -1,10 +1,9 @@
 package com.example.chatapp;
 
 public class Messages {
-    private String message,type,from;
+    private String message,type,from,IV;
     private boolean seen;
     private    long time;
-
     public Messages(){
 
     }
@@ -14,6 +13,13 @@ public class Messages {
         this.seen = seen;
         this.time = time;
         this.from = from;
+    }
+
+    public String getIV() {
+        return IV;
+    }
+    public void setIV(String iv){
+        this.IV = iv;
     }
 
     public String getMessage() {

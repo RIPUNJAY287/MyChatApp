@@ -38,7 +38,7 @@
         android:layout_alignParentTop="true"
         android:layout_marginStart="100dp"
         android:layout_marginTop="161dp"
-        android:src="@drawable/splash_violet_back" />
+        android:src="@drawable/back_splash_blue" />
 
     <TextView
         android:id="@+id/tvSplash"
@@ -53,7 +53,7 @@
         android:gravity="center"
         android:padding="10dp"
         android:text="@string/welcome_to_chatapp"
-        android:textColor="#FF0000"
+        android:textColor="#FFF7F4"
         android:textSize="36sp"
         android:textStyle="bold" />
 

@@ -3,7 +3,7 @@ apply plugin: 'com.google.gms.google-services'
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.3"
-
+    ndkVersion '23.1.7779620'
     defaultConfig {
         applicationId "com.example.chatapp"
         minSdkVersion 23
@@ -21,6 +21,15 @@ android {
         }
     }
 
+
+    externalNativeBuild {
+        ndkBuild {
+            path 'src/main/jni/Android.mk'//path of Android.mk file
+         //   abiFilters "armeabi-v7a", "arm64-v8a"
+        }
+    }
+
+
 }
 
 dependencies {
@@ -36,6 +45,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging:17.3.4'
 
 
+    //noinspection GradleCompatible
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
     testImplementation 'junit:junit:4.12'
